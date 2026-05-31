@@ -1,40 +1,42 @@
 """
-Contenido web: fetch de paginas con seguimiento de enlaces a contacto.
+Contenido web: fetch de paginas con extraccion de TEXTO VISIBLE (Ctrl+A).
 Busca: pagina principal + contacto + quienes-somos + aviso-legal.
-Acumula todo el contenido para enviar a DeepSeek.
+Extrae solo el texto visible, NO el HTML crudo.
 """
 import requests
 import re
 import time
 from urllib.parse import urljoin, urlparse
-from html.parser import HTMLParser
 
 
-class LinkFinder(HTMLParser):
-    """Extrae enlaces de una pagina HTML."""
-    def __init__(self, base_url):
-        super().__init__()
-        self.base_url = base_url
-        self.links = []
-
-    def handle_starttag(self, tag, attrs):
-        if tag == "a":
-            attrs_dict = dict(attrs)
-            href = attrs_dict.get("href", "")
-            text_lower = attrs_dict.get("text", "").lower()
-            if href and not href.startswith("#") and not href.startswith("javascript"):
-                full_url = urljoin(self.base_url, href)
-                self.links.append(full_url)
-
-    def handle_data(self, data):
-        # Store the last text node for context (not perfect but helps)
-        pass
+def _html_a_texto(html: str) -> str:
+    """
+    Convierte HTML a texto plano visible (como Ctrl+A + Ctrl+V).
+    Elimina scripts, styles, metadata, y deja solo el texto que se ve.
+    """
+    if not html or html.startswith("["):
+        return html
+    try:
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, "lxml")
+        # Eliminar elementos no visibles
+        for tag in soup(["script", "style", "meta", "noscript", "link", "svg", "path"]):
+            tag.decompose()
+        texto = soup.get_text(separator="\n")
+        # Limpiar lineas vacias multiples
+        lineas = [l.strip() for l in texto.split("\n") if l.strip()]
+        return "\n".join(lineas)
+    except ImportError:
+        # Fallback: regex basico para extraer texto (sin bs4)
+        texto = re.sub(r'<[^>]+>', ' ', html)
+        texto = re.sub(r'\s+', ' ', texto)
+        return texto
 
 
 def fetch_url(url: str, timeout: int = 15) -> tuple:
     """
     Obtiene el contenido de una URL.
-    Retorna (texto, content_type, status_code) o (error_msg, None, 0).
+    Retorna (texto_visible, content_type, status_code) o (error_msg, None, 0).
     """
     if not url:
         return "", None, 0
@@ -57,7 +59,9 @@ def fetch_url(url: str, timeout: int = 15) -> tuple:
         if "text/html" not in content_type and "application/xhtml" not in content_type:
             return f"[NO HTML] {content_type}", content_type, resp.status_code
 
-        return resp.text, content_type, resp.status_code
+        # Convertir HTML a texto visible (Ctrl+A)
+        texto_visible = _html_a_texto(resp.text)
+        return texto_visible, content_type, resp.status_code
 
     except requests.exceptions.Timeout:
         return f"[ERROR] Timeout", None, 0
@@ -105,10 +109,26 @@ def _es_pagina_contacto(url: str, texto_enlace: str = "") -> bool:
     return False
 
 
+def _fetch_url_raw(url: str, timeout: int = 15) -> str:
+    """Devuelve el HTML original (solo para extraer enlaces)."""
+    url = url.strip()
+    if not url.startswith("http"):
+        url = "https://" + url
+    try:
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        resp = requests.get(url, headers=headers, timeout=timeout, allow_redirects=True)
+        resp.raise_for_status()
+        return resp.text
+    except:
+        return ""
+
+
 def fetch_con_profundidad(url: str, max_paginas: int = 4) -> str:
     """
     Fetch de la pagina principal + subpaginas de contacto.
-    Retorna todo el contenido combinado.
+    1. Obtiene HTML original para extraer enlaces a contacto
+    2. Convierte CADA pagina a texto visible (Ctrl+A)
+    3. Combina todo
     """
     base_domain = urlparse(url).netloc
     visitadas = set()
@@ -119,11 +139,19 @@ def fetch_con_profundidad(url: str, max_paginas: int = 4) -> str:
         current = por_visitar.pop(0)
         if current in visitadas:
             continue
-
-        # Solo mismo dominio
         if urlparse(current).netloc != base_domain:
             continue
 
+        # Si es la principal, obtener RAW primero para extraer links
+        if current == url:
+            html_raw = _fetch_url_raw(url)
+            enlaces = _extraer_links(html_raw, url) if html_raw else []
+            for enlace in enlaces:
+                if enlace not in visitadas and _es_pagina_contacto(enlace):
+                    por_visitar.append(enlace)
+                    print(f"    -> Subpagina encontrada: {urlparse(enlace).path}")
+
+        # Obtener texto visible
         texto, _, status = fetch_url(current)
         visitadas.add(current)
 
@@ -132,29 +160,19 @@ def fetch_con_profundidad(url: str, max_paginas: int = 4) -> str:
 
         etiqueta = "PRINCIPAL" if current == url else current.split("/")[-1]
         contenidos.append(f"\n--- PAGINA: {etiqueta} ({current}) ---\n{texto}")
-
-        # Si es la pagina principal, buscar enlaces a contacto
-        if current == url:
-            enlaces = _extraer_links(texto, url)
-            for enlace in enlaces:
-                if enlace not in visitadas and _es_pagina_contacto(enlace):
-                    por_visitar.append(enlace)
-                    print(f"    -> Subpagina encontrada: {urlparse(enlace).path}")
-
         time.sleep(0.5)
 
-    # Limitar cada pagina individualmente (no el total)
-    # La pagina principal hasta 12K, subpaginas hasta 10K cada una
-    # Pagina principal 15K, subpaginas SIN LIMITE (enteras)
-    # Las subpaginas de contacto tienen la info al final, tras mucho HTML
-    combinado = contenidos[0][:15000] if contenidos else ""
-    for c in contenidos[1:]:
-        combinado += "\n\n" + c
-    # Limite total generoso: 80K (DeepSeek Flash tiene 1M contexto)
-    if len(combinado) > 80000:
-        combinado = combinado[:80000]
-
     paginas = len(visitadas)
+    if not contenidos:
+        return ""
+
+    # Combinar con limites generosos (texto visible es compacto)
+    combinado = contenidos[0][:5000] if contenidos else ""
+    for c in contenidos[1:]:
+        combinado += "\n\n" + c[:8000]
+    if len(combinado) > 25000:
+        combinado = combinado[:25000]
+
     print(f"  [FETCH] {paginas} pagina(s) visitada(s), {len(combinado)} chars total")
     return combinado
 
