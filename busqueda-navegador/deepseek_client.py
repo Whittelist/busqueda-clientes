@@ -8,6 +8,19 @@ import time
 from config import EXTRACTION_PROMPT, DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_URL
 
 
+def _extraer_emails_fallback(contenido: str) -> list[str]:
+    """Fallback: extrae emails con regex directamente del HTML."""
+    import re
+    # mailto:
+    mailtos = re.findall(r'mailto:([^"\'<>\s]+)', contenido)
+    # Cualquier email en el texto
+    emails = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', contenido)
+    todos = list(set(mailtos + emails))
+    # Filtrar falsos positivos
+    validos = [e for e in todos if not e.endswith(('.png', '.jpg', '.gif', '.svg', '.css', '.js'))]
+    return validos
+
+
 def extraer_datos(contenido: str, empresa: str, url: str) -> dict:
     """
     Envia el contenido de la web a DeepSeek y extrae datos estructurados.
@@ -57,7 +70,17 @@ def extraer_datos(contenido: str, empresa: str, url: str) -> dict:
             content = data["choices"][0].get("message", {}).get("content", "")
 
         # Parsear JSON de la respuesta
-        return _parsear_respuesta(content, empresa)
+        result = _parsear_respuesta(content, empresa)
+        
+        # Fallback: si DeepSeek no encontro emails, buscarlos con regex
+        if not result.get("email_encontrados"):
+            emails_fallback = _extraer_emails_fallback(contenido)
+            if emails_fallback:
+                print(f"  [FALLBACK] DeepSeek no detecto emails, regex encontro: {emails_fallback}")
+                result["email_encontrados"] = emails_fallback
+                result["proveedor_email"] = "detectado por regex"
+        
+        return result
 
     except requests.exceptions.Timeout:
         print(f"  [WARN] DeepSeek timeout para {empresa}")

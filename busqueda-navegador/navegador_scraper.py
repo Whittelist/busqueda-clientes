@@ -17,7 +17,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 from database import init_db, get_empresas_pendientes, guardar_enrichment, exportar_csv
-from web_fetcher import fetch_url, buscar_web_google
+from web_fetcher import fetch_con_profundidad, buscar_web_google
 from deepseek_client import extraer_datos
 from config import ENRICHED_DB
 
@@ -56,7 +56,7 @@ def procesar_empresa(empresa: dict) -> bool:
 
     # 2. Fetch web
     print(f"  [FETCH] {website}")
-    contenido = fetch_url(website)
+    contenido = fetch_con_profundidad(website)
 
     # 3. DeepSeek extrae datos
     print(f"  [IA] Analizando con DeepSeek...")

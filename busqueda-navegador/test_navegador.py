@@ -6,7 +6,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 from database import init_db, get_empresas_pendientes, guardar_enrichment
-from web_fetcher import fetch_url
+from web_fetcher import fetch_con_profundidad
 from deepseek_client import extraer_datos
 
 init_db()
@@ -24,7 +24,7 @@ website = emp.get("website", "")
 if not website:
     print("[TEST] Sin web - saltando...")
 else:
-    contenido = fetch_url(website)
+    contenido = fetch_con_profundidad(website)
     print(f"[TEST] Contenido obtenido: {len(contenido)} chars")
 
     datos = extraer_datos(contenido, emp["nombre"], website)
