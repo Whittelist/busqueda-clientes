@@ -3,9 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Data files
-data/*.db
-data/*.csv
+# Data files (databases, CSVs)
+*.db
+*.csv
 
 # Environment
 .env
