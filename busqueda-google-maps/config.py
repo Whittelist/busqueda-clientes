@@ -1,6 +1,6 @@
 """
-Configuración centralizada del proyecto.
-Carga variables de entorno y define constantes.
+Configuracion centralizada del proyecto.
+Define las comunidades autonomas con sus provincias.
 """
 import os
 from dotenv import load_dotenv
@@ -16,20 +16,35 @@ PLACES_API_BASE = "https://maps.googleapis.com/maps/api/place"
 PLACES_TEXTSEARCH_URL = f"{PLACES_API_BASE}/textsearch/json"
 PLACES_DETAILS_URL = f"{PLACES_API_BASE}/details/json"
 
-# --- Búsqueda ---
-# Provincias de Andalucía para test
-ANDALUCIA_PROVINCIAS = [
-    "Almería", "Cádiz", "Córdoba", "Granada",
-    "Huelva", "Jaén", "Málaga", "Sevilla"
-]
+# --- Comunidades Autonomas ---
+COMUNIDADES = {
+    "Andalucia": ["Almeria", "Cadiz", "Cordoba", "Granada", "Huelva", "Jaen", "Malaga", "Sevilla"],
+    "Aragon": ["Huesca", "Teruel", "Zaragoza"],
+    "Asturias": ["Asturias"],
+    "Baleares": ["Islas Baleares"],
+    "Canarias": ["Las Palmas", "Santa Cruz de Tenerife"],
+    "Cantabria": ["Cantabria"],
+    "Castilla-La Mancha": ["Albacete", "Ciudad Real", "Cuenca", "Guadalajara", "Toledo"],
+    "Castilla y Leon": ["Avila", "Burgos", "Leon", "Palencia", "Salamanca", "Segovia", "Soria", "Valladolid", "Zamora"],
+    "Catalunya": ["Barcelona", "Girona", "Lleida", "Tarragona"],
+    "Comunidad Valenciana": ["Alicante", "Castellon", "Valencia"],
+    "Extremadura": ["Badajoz", "Caceres"],
+    "Galicia": ["A Coruna", "Lugo", "Ourense", "Pontevedra"],
+    "La Rioja": ["La Rioja"],
+    "Madrid": ["Madrid"],
+    "Murcia": ["Murcia"],
+    "Navarra": ["Navarra"],
+    "Pais Vasco": ["Alava", "Bizkaia", "Gipuzkoa"],
+}
 
-# Categorías/niche a buscar (la primera para test)
+# --- Categorias de busqueda ---
 CATEGORIAS = [
-    "prefabricados de hormigón",
+    "prefabricados de hormigon",
 ]
 
-# Radio de búsqueda en metros (por defecto 50km = cubre provincia entera)
-SEARCH_RADIUS = 50000
+# --- Seleccion activa (cambiar aqui para buscar en otra comunidad) ---
+COMUNIDAD_ACTIVA = "Comunidad Valenciana"
+PROVINCIAS_ACTIVAS = COMUNIDADES[COMUNIDAD_ACTIVA]
 
 # --- Base de datos ---
 DB_PATH = os.path.join(os.path.dirname(__file__), "data", "clientes.db")

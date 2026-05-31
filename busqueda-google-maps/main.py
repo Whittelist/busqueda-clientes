@@ -15,7 +15,7 @@ import sys
 import time
 from datetime import datetime
 
-from config import CATEGORIAS, ANDALUCIA_PROVINCIAS, CSV_OUTPUT
+from config import CATEGORIAS, PROVINCIAS_ACTIVAS, COMUNIDAD_ACTIVA, CSV_OUTPUT
 from database import init_db, insertar_empresa, registrar_busqueda, exportar_csv, resumen
 from maps_scraper import buscar_todo
 
@@ -29,9 +29,10 @@ def main():
 
     init_db()
 
+    print(f"  Buscando en: {COMUNIDAD_ACTIVA}")
     empresas = buscar_todo(
         categorias=CATEGORIAS,
-        provincias=ANDALUCIA_PROVINCIAS,
+        provincias=PROVINCIAS_ACTIVAS,
     )
 
     if not empresas:
@@ -50,7 +51,7 @@ def main():
             duplicados += 1
 
     for cat in CATEGORIAS:
-        for prov in ANDALUCIA_PROVINCIAS:
+        for prov in PROVINCIAS_ACTIVAS:
             total_x_prov = sum(1 for e in empresas if e["provincia"] == prov)
             if total_x_prov > 0:
                 registrar_busqueda(cat, prov, total_x_prov)

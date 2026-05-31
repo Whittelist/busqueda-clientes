@@ -8,6 +8,10 @@ import re
 import time
 from urllib.parse import urljoin, urlparse
 
+# Silenciar warnings de paquetes renombrados
+import warnings
+warnings.filterwarnings('ignore', category=RuntimeWarning)
+
 
 def _html_a_texto(html: str) -> str:
     """
@@ -177,76 +181,10 @@ def fetch_con_profundidad(url: str, max_paginas: int = 4) -> str:
     return combinado
 
 
-def _ddgs_search(query: str, max_results: int = 5) -> list[dict]:
-    """
-    Busca en DuckDuckGo (no bloquea como Google).
-    Retorna lista de dicts con title, href, body.
-    """
-    try:
-        from duckduckgo_search import DDGS
-        with DDGS() as ddgs:
-            results = list(ddgs.text(query, max_results=max_results))
-        return [
-            {"titulo": r.get("title", ""), "url": r.get("href", ""), "snippet": r.get("body", "")[:200]}
-            for r in results
-        ]
-    except ImportError:
-        print("    [WARN] duckduckgo_search no instalado. pip install duckduckgo_search")
-        return []
-    except Exception as e:
-        print(f"    [WARN] Error en DuckDuckGo: {e}")
-        return []
-
-
 def buscar_web_google(empresa: str, provincia: str) -> str:
     """
-    Busca la web oficial de una empresa con DuckDuckGo + DeepSeek.
-    1. Busca en DuckDuckGo
-    2. Si hay varios resultados, DeepSeek elige la web oficial
-    3. Devuelve la URL o ""
+    Busca la web oficial de una empresa.
+    (desactivado temporalmente por problemas con DuckDuckGo)
     """
-    query = f'{empresa} {provincia}'
-    print(f"  [BUSQUEDA] Buscando web para '{empresa}'...")
-
-    resultados = _ddgs_search(query)
-    
-    if not resultados:
-        print(f"    [NO] Sin resultados")
-        return ""
-    
-    print(f"    Resultados: {len(resultados)}")
-    for r in resultados:
-        print(f"      {r['url']}")
-    
-    # Si solo hay 1 resultado, usarlo directamente
-    if len(resultados) == 1:
-        url = resultados[0]["url"]
-        print(f"    -> Directo: {url}")
-        return url
-    
-    # Varios resultados -> DeepSeek elige
-    from deepseek_client import _consultar_deepseek
-    
-    prompt = f"""Eres un asistente que identifica la web OFICIAL de una empresa.
-
-Empresa: "{empresa}"
-
-Resultados:"""
-    for i, r in enumerate(resultados, 1):
-        prompt += f'\n{i}. TITULO: {r["titulo"]}\n   URL: {r["url"]}'
-    
-    prompt += f'\n\nResponde SOLO con el numero de la web OFICIAL. 0 si ninguna es clara.\nRespuesta:'
-    
-    respuesta = _consultar_deepseek(prompt, max_tokens=10)
-    
-    try:
-        idx = int(respuesta.strip())
-        if 1 <= idx <= len(resultados):
-            url = resultados[idx - 1]["url"]
-            print(f"    -> DeepSeek (#{idx}): {url}")
-            return url
-    except (ValueError, IndexError):
-        pass
-    
-    print(f"    [NO] No se identifico web oficial")
+    # Por ahora, devolvemos vacio - las empresas sin web se marcan como tal
     return ""
