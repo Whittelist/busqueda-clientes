@@ -43,7 +43,7 @@ def procesar_empresa(empresa: dict) -> bool:
             guardar_enrichment(empresa["id"], {
                 "nombre": nombre,
                 "provincia": provincia,
-                "website": "",
+                "website": "No se encontro pagina web",
                 "email_encontrados": [],
                 "telefono_contacto": "",
                 "persona_contacto": "",

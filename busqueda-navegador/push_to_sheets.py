@@ -26,11 +26,11 @@ def push_enriched():
     conn = sqlite3.connect(ENRICHED_DB)
     conn.row_factory = sqlite3.Row
     rows = conn.execute("""
-        SELECT e.nombre, e.email_extraidos, e.telefono_contacto,
-               e.persona_contacto, e.problema_detectado, e.idea_mejora,
-               e.tamano_empresa
-        FROM enrichment e
-        ORDER BY e.provincia, e.nombre
+        SELECT nombre, email_extraidos, telefono_contacto,
+               persona_contacto, problema_detectado, idea_mejora,
+               tamano_empresa, website
+        FROM enrichment
+        ORDER BY provincia, nombre
     """).fetchall()
     conn.close()
 
@@ -60,26 +60,22 @@ def push_enriched():
         emails = json.loads(r["email_extraidos"] or "[]")
         email_str = ", ".join(emails)
 
-        # Columnas en Sheet4: E=Email, F=Telefono, M=Estado, Q=Problema, R=Idea, U=Tamano
-        updates = []
+        # Columnas en Sheet4: D=Web, E=Email, Q=Problema, R=Idea, U=Tamano
+        # Columnas a actualizar
+        cells = {}
         if email_str:
-            updates.append(f"E{fila}")
+            cells["E"] = email_str
         if r["problema_detectado"]:
-            updates.append(f"Q{fila}")
+            cells["Q"] = r["problema_detectado"]
         if r["idea_mejora"]:
-            updates.append(f"R{fila}")
+            cells["R"] = r["idea_mejora"]
         if r["tamano_empresa"]:
-            updates.append(f"U{fila}")
+            cells["U"] = r["tamano_empresa"]
+        if r["website"] == "No se encontro pagina web":
+            cells["D"] = "No se encontro"
 
-        for cell in updates:
-            col = cell[0]
-            val = {
-                "E": email_str,
-                "Q": r["problema_detectado"],
-                "R": r["idea_mejora"],
-                "U": r["tamano_empresa"],
-            }[col]
-
+        for col, val in cells.items():
+            cell = f"{col}{fila}"
             service.spreadsheets().values().update(
                 spreadsheetId=SPREADSHEET_ID,
                 range=f"Sheet4!{cell}",
