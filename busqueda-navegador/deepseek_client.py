@@ -90,6 +90,40 @@ def extraer_datos(contenido: str, empresa: str, url: str) -> dict:
         return {"email_encontrados": [], "problema_detectado": f"Error IA: {str(e)[:80]}", "idea_mejora": "", "tamano_empresa": ""}
 
 
+def _consultar_deepseek(prompt: str, max_tokens: int = 500) -> str:
+    """
+    Consulta a DeepSeek con un prompt y devuelve el texto de respuesta.
+    Usado para busquedas simples (elegir web oficial, etc).
+    """
+    messages = [
+        {"role": "system", "content": "Responde de forma concisa y directa."},
+        {"role": "user", "content": prompt}
+    ]
+    payload = {
+        "model": "deepseek-chat",
+        "messages": messages,
+        "temperature": 0.1,
+        "max_tokens": max_tokens,
+    }
+    try:
+        import requests
+        resp = requests.post(
+            "https://api.deepseek.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=15
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data["choices"][0]["message"]["content"].strip()
+    except Exception as e:
+        print(f"    [WARN] Error consultando DeepSeek: {e}")
+        return ""
+
+
 def _parsear_respuesta(content: str, empresa: str) -> dict:
     """Parsea la respuesta JSON de DeepSeek."""
     if not content:
