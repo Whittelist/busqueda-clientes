@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DEEPSEEK_API_KEY = "sk-66917a542be94fe394f812e6d2ccf997"
+DEEPSEEK_API_KEY = ***"DEEPSEEK_API_KEY", "")
 DEEPSEEK_MODEL = "deepseek-chat"  # deepseek-chat == V4 Flash (barato)
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 
