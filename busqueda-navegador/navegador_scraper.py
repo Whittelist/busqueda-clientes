@@ -2,14 +2,14 @@
 """
 Modulo 2: Busqueda Navegador
 Para cada empresa del Modulo 1 que NO haya sido procesada aun:
-- Si tiene web: fetch + DeepSeek extrae datos
-- Si no tiene web: buscar en Google + fetch + DeepSeek
+- Si tiene web: fetch + extraer emails con regex
+- Si no tiene web: buscar en Google + fetch + extraer emails
 - Guarda resultados
 
 Uso:
     python navegador_scraper.py
 """
-import sys, os, time
+import sys, os, time, re
 from datetime import datetime
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -18,13 +18,28 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 from database import init_db, get_empresas_pendientes, guardar_enrichment, exportar_csv
 from web_fetcher import fetch_con_profundidad, buscar_web_google
-from deepseek_client import extraer_datos
 from config import ENRICHED_DB
+
+
+def extraer_emails(contenido: str) -> list[str]:
+    """Extrae emails del texto plano con regex."""
+    emails = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', contenido or "")
+    validos = [e for e in emails if not e.endswith(('.png', '.jpg', '.gif', '.svg', '.css', '.js'))]
+    mailtos = re.findall(r'mailto:([^"\'<>\s]+)', contenido or "")
+    todos = list(set(validos + mailtos))
+    return todos
+
+
+def extraer_telefonos(contenido: str) -> list[str]:
+    """Extrae telefonos espanoles del texto plano con regex."""
+    nums = re.findall(r'(?:\+34)?[\s.-]?\d{3}[\s.-]?\d{3}[\s.-]?\d{3}', contenido or "")
+    unicos = list(set(nums))
+    return unicos
 
 
 def procesar_empresa(empresa: dict) -> bool:
     """
-    Procesa una empresa: busca web si no tiene, fetch, DeepSeek, guarda.
+    Procesa una empresa: busca web si no tiene, fetch, extraer emails, guarda.
     Retorna True si se proceso correctamente.
     """
     nombre = empresa["nombre"]
@@ -35,7 +50,7 @@ def procesar_empresa(empresa: dict) -> bool:
     print(f"[{nombre}] ({provincia})")
 
     # 1. Si no tiene web, intentar buscar
-    if not website:
+    if not website or website == "No se encontro":
         print("  [NO WEB] Buscando en Google...")
         website = buscar_web_google(nombre, provincia)
         if not website:
@@ -43,13 +58,10 @@ def procesar_empresa(empresa: dict) -> bool:
             guardar_enrichment(empresa["id"], {
                 "nombre": nombre,
                 "provincia": provincia,
-                "website": "No se encontro pagina web",
+                "website": "",  # no sobreescribir col D
                 "email_encontrados": [],
                 "telefono_contacto": "",
                 "persona_contacto": "",
-                "problema_detectado": "No se encontro pagina web",
-                "idea_mejora": "Crear presencia web profesional",
-                "tamano_empresa": "",
             })
             return True
         time.sleep(1)
@@ -58,33 +70,27 @@ def procesar_empresa(empresa: dict) -> bool:
     print(f"  [FETCH] {website}")
     contenido = fetch_con_profundidad(website)
 
-    # 3. DeepSeek extrae datos
-    print(f"  [IA] Analizando con DeepSeek...")
-    datos = extraer_datos(contenido, nombre, website)
-    datos["nombre"] = nombre
-    datos["provincia"] = provincia
-    datos["website"] = website
+    # 3. Extraer emails y telefonos con regex
+    emails = extraer_emails(contenido)
+    telefonos = extraer_telefonos(contenido)
 
     # 4. Mostrar resultados
-    emails = datos.get("email_encontrados", [])
     if emails:
         print(f"  [EMAILS] {', '.join(emails)}")
     else:
         print(f"  [EMAILS] No encontrados")
-
-    problema = datos.get("problema_detectado", "")
-    if problema:
-        print(f"  [PROBLEMA] {problema}")
-
-    mejora = datos.get("idea_mejora", "")
-    if mejora:
-        print(f"  [MEJORA] {mejora}")
-
-    tamano = datos.get("tamano_empresa", "")
-    if tamano:
-        print(f"  [TAMANO] {tamano}")
+    if telefonos:
+        print(f"  [TLF] {', '.join(telefonos)}")
 
     # 5. Guardar en BD
+    datos = {
+        "nombre": nombre,
+        "provincia": provincia,
+        "website": website,
+        "email_encontrados": emails,
+        "telefono_contacto": ", ".join(telefonos) if telefonos else "",
+        "persona_contacto": "",
+    }
     guardar_enrichment(empresa["id"], datos)
     print(f"  [OK] Guardado")
 
@@ -132,6 +138,11 @@ def main():
     # Exportar CSV de enrichment
     csv_path = os.path.join(os.path.dirname(__file__), "data", "enriched.csv")
     exportar_csv(csv_path)
+
+    # Subir resultados al sheet automaticamente
+    print(f"\n  [PUSH] Subiendo resultados al sheet...")
+    from push_to_sheets import push_enriched
+    push_enriched()
 
     elapsed = time.time() - start
     print(f"\n{'='*60}")

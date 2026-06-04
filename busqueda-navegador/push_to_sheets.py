@@ -41,7 +41,7 @@ def push_enriched():
     # Leer datos actuales de Sheet4 para encontrar filas por nombre
     sheet_data = service.spreadsheets().values().get(
         spreadsheetId=SPREADSHEET_ID,
-        range="Sheet4!A2:V2000"
+        range="TEST EMPRESAS BOT 2!A2:V2000"
     ).execute().get("values", [])
 
     # Mapa: nombre_empresa -> indice_fila (2-indexed en sheets)
@@ -60,25 +60,30 @@ def push_enriched():
         emails = json.loads(r["email_extraidos"] or "[]")
         email_str = ", ".join(emails)
 
-        # Columnas en Sheet4: D=Web, E=Email, Q=Problema, R=Idea, U=Tamano
-        # Columnas a actualizar
+        # Columnas en Sheet4: D=Web, E=Email, F=Telefono, Q=Problema, R=Idea, U=Tamano
         cells = {}
         if email_str:
             cells["E"] = email_str
+        else:
+            cells["E"] = "No encontrado"
+        if r["telefono_contacto"]:
+            cells["F"] = r["telefono_contacto"]
+        if not r["website"]:
+            cells["D"] = "No encontrado"
+        elif "No se encontro" in str(r["website"]):
+            cells["D"] = "No encontrado"
         if r["problema_detectado"]:
             cells["Q"] = r["problema_detectado"]
         if r["idea_mejora"]:
             cells["R"] = r["idea_mejora"]
         if r["tamano_empresa"]:
             cells["U"] = r["tamano_empresa"]
-        if r["website"] == "No se encontro pagina web":
-            cells["D"] = "No se encontro"
 
         for col, val in cells.items():
             cell = f"{col}{fila}"
             service.spreadsheets().values().update(
                 spreadsheetId=SPREADSHEET_ID,
-                range=f"Sheet4!{cell}",
+                range=f"TEST EMPRESAS BOT 2!{cell}",
                 valueInputOption="RAW",
                 body={"values": [[val]]}
             ).execute()

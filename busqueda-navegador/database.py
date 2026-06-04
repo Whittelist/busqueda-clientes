@@ -66,7 +66,7 @@ def ya_procesada(empresa_id: int) -> bool:
     """Comprueba si una empresa ya fue procesada por este modulo."""
     conn = get_connection()
     row = conn.execute(
-        "SELECT 1 FROM enrichment WHERE empresa_id = ? AND problema_detectado != ''",
+        "SELECT 1 FROM enrichment WHERE empresa_id = ?",
         (empresa_id,)
     ).fetchone()
     conn.close()
