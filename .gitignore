@@ -9,3 +9,6 @@ __pycache__/
 
 # Environment
 .env
+
+# OAuth tokens
+google_token_sheets.json

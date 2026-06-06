@@ -1,0 +1,78 @@
+<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,sans-serif;">
+
+<tr>
+<td>
+
+<!-- NOMBRE -->
+<div style="
+font-size:20px;
+font-weight:700;
+color:#111827;
+margin-bottom:4px;
+">
+Silvia Perea
+</div>
+
+<!-- CARGO -->
+<div style="
+font-size:15px;
+color:#4958C9;
+font-weight:600;
+margin-bottom:18px;
+">
+Co-Founder of SILVIGON
+</div>
+
+<!-- IMAGEN FIRMA -->
+<img 
+src="AQUI_TU_IMAGEN"
+alt="Firma de Silvigon"
+width="650"
+style="
+display:block;
+width:650px;
+max-width:650px;
+height:auto;
+border:0;
+">
+
+<!-- LINKS -->
+<div style="
+margin-top:10px;
+font-size:14px;
+line-height:1.8;
+color:#475569;
+">
+
+<a href="mailto:equipo@silvigon.com"
+style="color:#2563eb;text-decoration:none;">
+📧 equipo@silvigon.com
+</a>
+
+&nbsp;&nbsp;•&nbsp;&nbsp;
+
+<a href="https://silvigon.com"
+style="color:#2563eb;text-decoration:none;">
+🌐 silvigon.com
+</a>
+
+&nbsp;&nbsp;•&nbsp;&nbsp;
+
+<a href="tel:+34711268493"
+style="color:#2563eb;text-decoration:none;">
+📞 +34 711 26 84 93
+</a>
+
+&nbsp;&nbsp;•&nbsp;&nbsp;
+
+<a href="https://wa.me/34711268493"
+style="color:#16a34a;text-decoration:none;font-weight:600;">
+💬 WhatsApp
+</a>
+
+</div>
+
+</td>
+</tr>
+
+</table>
