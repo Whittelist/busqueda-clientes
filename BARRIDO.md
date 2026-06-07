@@ -1,9 +1,29 @@
 # Mapa de Barrido por Comunidades Autonomas
 
 Cada comunidad se procesa cambiando `COMUNIDAD_ACTIVA` en `busqueda-google-maps/config.py`
-y ejecutando el modulo 1. Luego el modulo 2 completa lo que falte.
+y ejecutando `main.py`. Luego hacer `push_to_sheets.py` para subir al Sheet.
 
 ---
+
+## Modulos del Pipeline
+
+| Modulo | Estado | Descripcion |
+|--------|--------|-------------|
+| `busqueda-google-maps/` | ✅ | Scrapea Google Places API → SQLite → Sheet |
+| `busqueda-navegador/` | ⏳ | Fetch web + extrae emails/tlf |
+| `investigacion-empresas/` | ✅ | DeepSeek analiza web → problema/mejora/tamano en Q,R,U |
+| `dedup.py` | ✅ | Detecta duplicados por email en el Sheet y los fusiona |
+| `busqueda-emails/` | ⏳ | Campana de emails (se alimenta del Sheet) |
+
+## Notas
+
+- **Dedup**: `push_to_sheets.py` ya detecta duplicados por email al insertar. Ademas, `dedup.py --apply` escanea y fusiona filas con emails compartidos.
+- **API Key Google Places**: `AIzaSyDEVokq9VndWe6uW2J9HoRc6cVhk2EQIsY` (cuenta Silvigon)
+- **Sheet**: `TEST EMPRESAS BOT 2` en el spreadsheet de busqueda-clientes
+
+---
+
+## Barrido por Comunidades
 
 ## [ ] Andalucia
 - [ ] Almeria
@@ -33,9 +53,9 @@ y ejecutando el modulo 1. Luego el modulo 2 completa lo que falte.
 ## [ ] Cantabria
 - [ ] Cantabria
 
-## [ ] Castilla-La Mancha
+## [x] Castilla-La Mancha (Ciudad Real)
 - [ ] Albacete
-- [ ] Ciudad Real
+- [x] Ciudad Real
 - [ ] Cuenca
 - [ ] Guadalajara
 - [ ] Toledo

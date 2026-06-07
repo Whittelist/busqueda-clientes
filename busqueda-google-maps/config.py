@@ -43,8 +43,8 @@ CATEGORIAS = [
 ]
 
 # --- Seleccion activa (cambiar aqui para buscar en otra comunidad) ---
-COMUNIDAD_ACTIVA = "Comunidad Valenciana"
-PROVINCIAS_ACTIVAS = COMUNIDADES[COMUNIDAD_ACTIVA]
+COMUNIDAD_ACTIVA = "Castilla-La Mancha"
+PROVINCIAS_ACTIVAS = ["Ciudad Real"]
 
 # --- Base de datos ---
 DB_PATH = os.path.join(os.path.dirname(__file__), "data", "clientes.db")
